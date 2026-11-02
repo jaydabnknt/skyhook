@@ -57,6 +57,8 @@ android {
     }
 
     packaging {
+        // Compress Gecko's native libs: ~3x smaller APK download.
+        jniLibs { useLegacyPackaging = true }
         resources.excludes += listOf("META-INF/*.kotlin_module", "META-INF/AL2.0", "META-INF/LGPL2.1")
     }
 }
