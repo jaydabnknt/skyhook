@@ -10,7 +10,10 @@ fun secret(name: String): String =
 
 android {
     namespace = "com.jaydabnknt.skyhook"
-    compileSdk = 37
+    // GeckoView 159+ requires API 37.2
+    compileSdk {
+        version = release(37) { minorApiLevel = 2 }
+    }
 
     defaultConfig {
         applicationId = "com.jaydabnknt.skyhook"
