@@ -314,8 +314,8 @@ class BrowserActivity : AppCompatActivity() {
         s.promptDelegate = prompts
 
         s.progressDelegate = object : ProgressDelegate {
-            override fun onPageStart(session: GeckoSession, url: String?) {
-                tab.progress = 5; if (url != null) tab.url = url
+            override fun onPageStart(session: GeckoSession, url: String) {
+                tab.progress = 5; tab.url = url
                 if (tab === current) updateProgress(tab)
             }
             override fun onPageStop(session: GeckoSession, success: Boolean) {
@@ -331,7 +331,7 @@ class BrowserActivity : AppCompatActivity() {
         s.navigationDelegate = object : NavigationDelegate {
             override fun onLocationChange(
                 session: GeckoSession, url: String?,
-                perms: MutableList<PermissionDelegate.ContentPermission>?, hasUserGesture: Boolean?,
+                perms: MutableList<PermissionDelegate.ContentPermission>, hasUserGesture: Boolean,
             ) {
                 tab.url = url ?: ""
                 if (tab === current && !urlBar.hasFocus()) urlBar.setText(displayUrl(tab.url))
@@ -347,10 +347,10 @@ class BrowserActivity : AppCompatActivity() {
                 return GeckoResult.fromValue(AllowOrDeny.DENY)
             }
 
-            override fun onNewSession(session: GeckoSession, uri: String?): GeckoResult<GeckoSession> {
+            override fun onNewSession(session: GeckoSession, uri: String): GeckoResult<GeckoSession> {
                 // GeckoView opens the returned session itself, so hand back an unopened one.
                 val t = newTab(null, select = false, openSession = false)
-                t.url = uri ?: ""
+                t.url = uri
                 geckoView.post { selectTab(t) }
                 return GeckoResult.fromValue(t.session)
             }
