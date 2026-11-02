@@ -21,7 +21,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.14.3
+          gradle-version: 9.8.2
 
       - name: Bundle uBlock Origin
         env:
@@ -37,17 +37,22 @@ jobs:
       - name: Restore signing key
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > app/release.jks
-            echo "Using release key"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD_SECRET" >> "$GITHUB_ENV"
+            echo "Using private release key"
           else
-            echo "::warning::No KEYSTORE_B64 secret: APK is signed with a throwaway debug key (Google Drive sign-in won't match)"
+            # No private key configured: use the repo's public key so the SHA-1 (and Google
+            # Drive sign-in) stays the same across builds and updates install over each other.
+            cp keystore/skyhook-public.jks app/release.jks
+            echo "KEYSTORE_PASSWORD=QfNkz2Bbql3dyB2VwZ3HNa5H" >> "$GITHUB_ENV"
+            echo "Using the public repo key"
           fi
 
       - name: Build
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: skyhook
           DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
           YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}

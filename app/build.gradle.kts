@@ -1,6 +1,5 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("com.android.application") // AGP 9 compiles Kotlin itself
 }
 
 // GeckoView version: CI passes -PgeckoviewVersion=<latest release>; "+" otherwise.
@@ -11,7 +10,7 @@ fun secret(name: String): String =
 
 android {
     namespace = "com.jaydabnknt.skyhook"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.jaydabnknt.skyhook"
@@ -57,10 +56,6 @@ android {
     packaging {
         resources.excludes += listOf("META-INF/*.kotlin_module", "META-INF/AL2.0", "META-INF/LGPL2.1")
     }
-}
-
-kotlin {
-    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
 dependencies {

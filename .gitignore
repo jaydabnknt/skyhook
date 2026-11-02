@@ -8,3 +8,4 @@ local.properties
 *.keystore
 # Downloaded at build time by scripts/fetch-ubo.sh
 app/src/main/assets/extensions/ubo/
+!keystore/skyhook-public.jks
