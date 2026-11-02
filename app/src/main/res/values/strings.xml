@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Skyhook</string>
+    <string name="settings">Settings</string>
+    <string name="downloads">Downloads</string>
+    <string name="sign_in">Sign in</string>
+    <string name="url_hint">Search or type address</string>
+    <string name="channel_downloads">Downloads</string>
+</resources>

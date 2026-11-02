@@ -1,0 +1,82 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.3
+
+      - name: Bundle uBlock Origin
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/fetch-ubo.sh
+
+      - name: Pick latest GeckoView release
+        run: |
+          V=$(curl -fsSL https://maven.mozilla.org/maven2/org/mozilla/geckoview/geckoview/maven-metadata.xml | grep -oP '(?<=<release>)[^<]+')
+          echo "GeckoView $V"
+          echo "GV=$V" >> "$GITHUB_ENV"
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > app/release.jks
+            echo "Using release key"
+          else
+            echo "::warning::No KEYSTORE_B64 secret: APK is signed with a throwaway debug key (Google Drive sign-in won't match)"
+          fi
+
+      - name: Build
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: skyhook
+          DROPBOX_APP_KEY: ${{ secrets.DROPBOX_APP_KEY }}
+          YANDEX_CLIENT_ID: ${{ secrets.YANDEX_CLIENT_ID }}
+        run: gradle --no-daemon :app:assembleRelease -PgeckoviewVersion="$GV"
+
+      - name: Collect APK
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -n1)
+          cp "$APK" "Skyhook-${{ github.run_number }}.apk"
+          SHA1=$("$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" 2>/dev/null | grep -m1 'SHA-1' | awk '{print $NF}' | sed 's/../&:/g;s/:$//' | tr a-f A-F || true)
+          UBO=$(grep -m1 '"version"' app/src/main/assets/extensions/ubo/manifest.json | sed 's/[^0-9.]//g')
+          {
+            echo "Skyhook build ${{ github.run_number }}"
+            echo
+            echo "- GeckoView: $GV"
+            echo "- uBlock Origin: $UBO"
+            echo "- Signing SHA-1 (for the Google Drive OAuth client): \`$SHA1\`"
+          } > notes.md
+          cat notes.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Skyhook-${{ github.run_number }}
+          path: Skyhook-${{ github.run_number }}.apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Skyhook build ${{ github.run_number }}
+          body_path: notes.md
+          files: Skyhook-${{ github.run_number }}.apk
+          make_latest: true

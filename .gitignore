@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+.kotlin/
+*.jks
+*.keystore
+# Downloaded at build time by scripts/fetch-ubo.sh
+app/src/main/assets/extensions/ubo/

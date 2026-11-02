@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Skyhook media detector",
+  "version": "1.0",
+  "description": "Watches network traffic for video streams and files and reports them to the browser.",
+  "browser_specific_settings": {
+    "gecko": { "id": "detector@skyhook.jaydabnknt" }
+  },
+  "permissions": [
+    "webRequest",
+    "tabs",
+    "<all_urls>",
+    "nativeMessaging",
+    "nativeMessagingFromContent",
+    "geckoViewAddons"
+  ],
+  "background": { "scripts": ["background.js"] },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}

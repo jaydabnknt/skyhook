@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="accent">#3D8BFF</color>
+    <color name="bar">#15171C</color>
+    <color name="bar_field">#262A33</color>
+    <color name="on_bar">#E8EAF0</color>
+    <color name="on_bar_dim">#9AA0AD</color>
+    <color name="ubo_red">#B5121B</color>
+    <color name="video_green">#2EB872</color>
+
+    <style name="Theme.Skyhook" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent</item>
+        <item name="colorSecondary">@color/accent</item>
+        <item name="android:statusBarColor">@color/bar</item>
+        <item name="android:navigationBarColor">@color/bar</item>
+        <item name="android:windowBackground">@color/bar</item>
+    </style>
+</resources>
