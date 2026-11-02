@@ -1,4 +1,8 @@
 buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
     dependencies {
         // GeckoView ships kotlin-stdlib 2.4.x; AGP's bundled Kotlin (2.2) can't read it.
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.21")
