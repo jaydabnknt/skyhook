@@ -258,6 +258,20 @@ class BrowserActivity : AppCompatActivity() {
         updateTabCount()
     }
 
+    /**
+     * For tabs whose session we hand to GeckoView (popups, target=_blank, extension tabs):
+     * GeckoView opens the session itself a moment later and crashes if we open it first,
+     * so wait until it has, then show it.
+     */
+    private fun selectWhenOpened(tab: Tab, tries: Int = 0) {
+        when {
+            tab !in tabs -> return
+            tab.session.isOpen -> selectTab(tab)
+            tries < 100 -> geckoView.postDelayed({ selectWhenOpened(tab, tries + 1) }, 30)
+            else -> { tabs.remove(tab); updateTabCount() } // GeckoView never used it
+        }
+    }
+
     private fun closeTab(tab: Tab) {
         val idx = tabs.indexOf(tab)
         tabs.remove(tab)
@@ -351,7 +365,7 @@ class BrowserActivity : AppCompatActivity() {
                 // GeckoView opens the returned session itself, so hand back an unopened one.
                 val t = newTab(null, select = false, openSession = false)
                 t.url = uri
-                geckoView.post { selectTab(t) }
+                selectWhenOpened(t)
                 return GeckoResult.fromValue(t.session)
             }
         }
@@ -496,7 +510,7 @@ class BrowserActivity : AppCompatActivity() {
                 override fun onNewTab(source: WebExtension, createDetails: WebExtension.CreateTabDetails): GeckoResult<GeckoSession> {
                     val t = newTab(null, select = false, openSession = false)
                     t.url = createDetails.url ?: ""
-                    geckoView.post { selectTab(t) }
+                    selectWhenOpened(t)
                     return GeckoResult.fromValue(t.session)
                 }
             })
