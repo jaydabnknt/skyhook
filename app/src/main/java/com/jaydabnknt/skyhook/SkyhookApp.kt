@@ -11,15 +11,37 @@ class SkyhookApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        // Gecko content processes also run Application.onCreate; keep this light.
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_DOWNLOADS, getString(R.string.channel_downloads), NotificationManager.IMPORTANCE_LOW)
-        )
+        // Gecko runs web content, the GPU and extensions in separate, sandboxed (isolated)
+        // processes that also start this Application. Those processes may not touch system
+        // services, so everything below is main-process only — doing it everywhere made
+        // every page's content process crash.
+        if (Application.getProcessName() != packageName) return
+
+        installCrashLogger()
+        runCatching {
+            getSystemService(NotificationManager::class.java).createNotificationChannel(
+                NotificationChannel(CHANNEL_DOWNLOADS, getString(R.string.channel_downloads), NotificationManager.IMPORTANCE_LOW)
+            )
+        }
+    }
+
+    /** Saves the stack trace of any app crash so it can be shown (and copied) on next launch. */
+    private fun installCrashLogger() {
+        val previous = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            runCatching {
+                crashFile(this).writeText(
+                    "Skyhook ${BuildConfig.VERSION_NAME} · Android ${android.os.Build.VERSION.RELEASE} · " +
+                        "${android.os.Build.MODEL}\nthread: ${t.name}\n\n${android.util.Log.getStackTraceString(e)}"
+                )
+            }
+            previous?.uncaughtException(t, e)
+        }
     }
 
     companion object {
         const val CHANNEL_DOWNLOADS = "downloads"
+        fun crashFile(c: Context) = java.io.File(c.filesDir, "last_crash.txt")
         lateinit var instance: SkyhookApp
             private set
     }

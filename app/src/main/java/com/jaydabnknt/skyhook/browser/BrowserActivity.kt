@@ -120,6 +120,7 @@ class BrowserActivity : AppCompatActivity() {
         })
 
         if (Build.VERSION.SDK_INT >= 33) requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        showLastCrash()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -313,8 +314,8 @@ class BrowserActivity : AppCompatActivity() {
         s.promptDelegate = prompts
 
         s.progressDelegate = object : ProgressDelegate {
-            override fun onPageStart(session: GeckoSession, url: String) {
-                tab.progress = 5; tab.url = url
+            override fun onPageStart(session: GeckoSession, url: String?) {
+                tab.progress = 5; if (url != null) tab.url = url
                 if (tab === current) updateProgress(tab)
             }
             override fun onPageStop(session: GeckoSession, success: Boolean) {
@@ -330,7 +331,7 @@ class BrowserActivity : AppCompatActivity() {
         s.navigationDelegate = object : NavigationDelegate {
             override fun onLocationChange(
                 session: GeckoSession, url: String?,
-                perms: MutableList<PermissionDelegate.ContentPermission>, hasUserGesture: Boolean,
+                perms: MutableList<PermissionDelegate.ContentPermission>?, hasUserGesture: Boolean?,
             ) {
                 tab.url = url ?: ""
                 if (tab === current && !urlBar.hasFocus()) urlBar.setText(displayUrl(tab.url))
@@ -346,10 +347,10 @@ class BrowserActivity : AppCompatActivity() {
                 return GeckoResult.fromValue(AllowOrDeny.DENY)
             }
 
-            override fun onNewSession(session: GeckoSession, uri: String): GeckoResult<GeckoSession> {
+            override fun onNewSession(session: GeckoSession, uri: String?): GeckoResult<GeckoSession> {
                 // GeckoView opens the returned session itself, so hand back an unopened one.
                 val t = newTab(null, select = false, openSession = false)
-                t.url = uri
+                t.url = uri ?: ""
                 geckoView.post { selectTab(t) }
                 return GeckoResult.fromValue(t.session)
             }
@@ -364,12 +365,9 @@ class BrowserActivity : AppCompatActivity() {
 
             override fun onCloseRequest(session: GeckoSession) { closeTab(tab) }
 
-            override fun onCrash(session: GeckoSession) {
-                Toast.makeText(this@BrowserActivity, "Tab crashed — reloading", Toast.LENGTH_SHORT).show()
-                val url = tab.url
-                closeTab(tab)
-                newTab(url)
-            }
+            override fun onCrash(session: GeckoSession) = recoverTab(tab, crashed = true)
+
+            override fun onKill(session: GeckoSession) = recoverTab(tab, crashed = false)
 
             override fun onExternalResponse(session: GeckoSession, response: WebResponse) {
                 DownloadPrompt.fromResponse(this@BrowserActivity, response, tab.url)
@@ -397,6 +395,48 @@ class BrowserActivity : AppCompatActivity() {
                 )
             }
         }
+    }
+
+    /**
+     * The tab's content process died. Reopen the same session and reload once; if it keeps
+     * dying, stop and let the user decide instead of looping.
+     */
+    private fun recoverTab(tab: Tab, crashed: Boolean) {
+        val now = System.currentTimeMillis()
+        tab.crashTimes.removeAll { now - it > 30_000 }
+        tab.crashTimes += now
+        val s = tab.session
+        runCatching { if (s.isOpen) s.close() }
+        if (current === tab) geckoView.releaseSession()
+        s.open(Gecko.runtime)
+        attachExtensions(tab)
+        if (current === tab) geckoView.setSession(s)
+        if (tab.crashTimes.size <= 2) {
+            if (tab.url.isNotBlank()) s.loadUri(tab.url)
+            if (crashed) Toast.makeText(this, "Page crashed — reloading", Toast.LENGTH_SHORT).show()
+        } else {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("This page keeps crashing")
+                .setMessage(tab.url)
+                .setPositiveButton("Try again") { _, _ -> tab.crashTimes.clear(); s.loadUri(tab.url) }
+                .setNegativeButton("Close tab") { _, _ -> closeTab(tab) }
+                .show()
+        }
+    }
+
+    /** If the app crashed last time, show the error so it can be copied and reported. */
+    private fun showLastCrash() {
+        val f = com.jaydabnknt.skyhook.SkyhookApp.crashFile(this)
+        if (!f.exists()) return
+        val text = runCatching { f.readText() }.getOrDefault("")
+        f.delete()
+        if (text.isBlank()) return
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Skyhook crashed last time")
+            .setMessage(text.take(3000))
+            .setPositiveButton("Copy") { _, _ -> copy(text); Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show() }
+            .setNegativeButton("Dismiss", null)
+            .show()
     }
 
     private fun openExternal(uri: String, session: GeckoSession) {

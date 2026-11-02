@@ -61,7 +61,7 @@ class OAuthActivity : AppCompatActivity() {
 
             override fun onLocationChange(
                 session: GeckoSession, url: String?,
-                perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>, hasUserGesture: Boolean,
+                perms: MutableList<GeckoSession.PermissionDelegate.ContentPermission>?, hasUserGesture: Boolean?,
             ) {
                 if (url != null && isRedirect(provider!!, url)) complete(provider, url)
             }

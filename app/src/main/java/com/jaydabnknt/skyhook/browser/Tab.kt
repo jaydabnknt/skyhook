@@ -12,6 +12,7 @@ class Tab(val session: GeckoSession) {
     var canGoForward = false
     var uboAction: WebExtension.Action? = null
     var extensionsAttached = false
+    val crashTimes = mutableListOf<Long>()
 
     /** Media seen on the current page, in detection order. */
     val media = LinkedHashMap<String, MediaItem>()
