@@ -2,7 +2,7 @@
 
 An Android browser built on **GeckoView** (Firefox's engine) with:
 
-- **The real uBlock Origin** bundled in — tap the red shield for the per-site panel (element picker, on/off for a site), long-press it for the full dashboard (filter lists, custom filters, whitelist).
+- **The real uBlock Origin** bundled in — tap the red shield for the full dashboard (filter lists, custom filters, trusted sites), long-press it for the per-site panel (element picker, on/off for a site).
 - **Video detector** — a built-in extension watches the network for HLS (`.m3u8`), DASH (`.mpd`) and plain video/audio files. The video icon in the address bar lights up with a count.
 - **Downloader** — pick a quality; HLS (incl. AES-128) and DASH are fetched segment by segment. When video and audio come as separate tracks (most DASH and many HLS sites), they're **merged into one MP4 on the fly**.
 - **Cloud-only downloads** — choose Google Drive, Dropbox or Yandex Disk and bytes stream straight from the website to the drive through an 8 MB memory buffer. **Nothing is written to the phone**, not even a temp file. Choose "This phone" to save to `Download/Skyhook` instead.

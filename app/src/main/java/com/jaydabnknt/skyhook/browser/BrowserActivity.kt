@@ -174,8 +174,9 @@ class BrowserActivity : AppCompatActivity() {
                 Toast.makeText(this, "No videos detected on this page yet — start playing one.", Toast.LENGTH_SHORT).show()
             } else MediaSheet.show(this, t.media.values.toList(), t.title)
         }
-        findViewById<FrameLayout>(R.id.btn_ubo).setOnClickListener { openUboPopup() }
-        findViewById<FrameLayout>(R.id.btn_ubo).setOnLongClickListener { openUboDashboard(); true }
+        // Tap: uBO settings (dashboard). Long-press: uBO's panel for the current site.
+        findViewById<FrameLayout>(R.id.btn_ubo).setOnClickListener { openUboDashboard() }
+        findViewById<FrameLayout>(R.id.btn_ubo).setOnLongClickListener { openUboPopup(); true }
         findViewById<FrameLayout>(R.id.btn_tabs).setOnClickListener { showTabs() }
         findViewById<ImageButton>(R.id.btn_menu).setOnClickListener { showMenu(it) }
     }
@@ -557,8 +558,7 @@ class BrowserActivity : AppCompatActivity() {
     private fun openUboPopup() {
         val action = current?.uboAction ?: uboDefaultAction
         if (action == null) {
-            if (Gecko.ubo == null) Toast.makeText(this, "uBlock Origin is still loading…", Toast.LENGTH_SHORT).show()
-            else openUboDashboard()
+            if (Gecko.ubo == null) uboNotReady() else openUboDashboard()
             return
         }
         current?.let { runCatching { Gecko.runtime.webExtensionController.setTabActive(it.session, true) } }
@@ -566,9 +566,22 @@ class BrowserActivity : AppCompatActivity() {
     }
 
     private fun openUboDashboard() {
-        val url = Gecko.ubo?.metaData?.optionsPageUrl
-        if (url == null) Toast.makeText(this, "uBlock Origin isn't ready", Toast.LENGTH_SHORT).show()
-        else newTab(url)
+        val ubo = Gecko.ubo ?: return uboNotReady()
+        val url = ubo.metaData.optionsPageUrl ?: "${ubo.metaData.baseUrl.trimEnd('/')}/dashboard.html"
+        // Reuse an open dashboard tab instead of stacking new ones.
+        tabs.firstOrNull { it.url.startsWith(url.substringBefore('#')) }?.let { selectTab(it); return }
+        newTab(url)
+    }
+
+    private fun uboNotReady() {
+        val err = Gecko.uboError
+        if (err == null) Toast.makeText(this, "uBlock Origin is still installing — try again in a few seconds", Toast.LENGTH_SHORT).show()
+        else MaterialAlertDialogBuilder(this)
+            .setTitle("uBlock Origin couldn't be installed")
+            .setMessage(err)
+            .setPositiveButton("Copy") { _, _ -> copy(err) }
+            .setNegativeButton("OK", null)
+            .show()
     }
 
     private var popupSheet: BottomSheetDialog? = null

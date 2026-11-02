@@ -64,7 +64,7 @@ jobs:
           cp "$APK" "Skyhook-${{ github.run_number }}.apk"
           BT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
           SHA1=$("$BT/apksigner" verify --print-certs "$APK" | grep -m1 'SHA-1 digest' | awk '{print toupper($NF)}' | sed 's/../&:/g;s/:$//')
-          UBO=$(grep -m1 '"version"' app/src/main/assets/extensions/ubo/manifest.json | sed 's/[^0-9.]//g')
+          UBO=$(unzip -p app/src/main/assets/extensions/ubo.xpi manifest.json | grep -m1 '"version"' | sed 's/[^0-9.]//g')
           {
             echo "Skyhook build ${{ github.run_number }}"
             echo

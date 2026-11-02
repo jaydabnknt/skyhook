@@ -155,7 +155,7 @@ class SettingsActivity : AppCompatActivity() {
         header("Ad blocking")
         content.addView(TextView(this).apply {
             text = Gecko.uboError?.let { "uBlock Origin failed to load: $it" }
-                ?: Gecko.ubo?.let { "uBlock Origin ${it.metaData.version} — tap the red shield for the per-site panel, long-press it for the dashboard (filter lists, element zapper rules, whitelist)." }
+                ?: Gecko.ubo?.let { "uBlock Origin ${it.metaData.version} — tap the red shield for its settings (filter lists, my filters, trusted sites); long-press it for the panel for the current site." }
                 ?: "uBlock Origin is loading…"
             alpha = 0.8f
         })
